@@ -15,7 +15,7 @@ pub fn main() !void {
             '<' => coordinate[0] -= 1,
             '^' => coordinate[1] -= 1,
             'v' => coordinate[1] += 1,
-            else => {},
+            else => continue,
         }
         try visited.put(coordinate, {});
     } else |_| {}
