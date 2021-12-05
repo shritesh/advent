@@ -24,6 +24,8 @@ pub fn main() void {
     var password: [8]u8 = "hepxcrrq".*;
     nextPassword(&password);
     std.debug.print("{s}\n", .{&password});
+    nextPassword(&password);
+    std.debug.print("{s}\n", .{&password});
 }
 
 fn increasingThreeLetters(password: []const u8) bool {
