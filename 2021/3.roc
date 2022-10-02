@@ -1,6 +1,5 @@
 app "advent-3"
     packages { pf: "../../roc/examples/interactive/cli-platform/main.roc" }
-    # imports [pf.File, pf.Path, pf.Program, pf.Task, pf.Stderr, pf.Stdout]
     imports [pf.File, pf.Path, pf.Program, pf.Task, pf.Stdout]
     provides [main] to pf
 
@@ -24,11 +23,18 @@ parse = \input ->
     |> List.map parseNum
 
 parseNum = \line ->
-    Str.walkScalars line 0u32 \n, s ->
-        when s is
-            '1' -> Num.shiftLeftBy n 1 + 1
-            _ -> Num.shiftLeftBy n 1
+    Str.walkScalars line 0u16 \n, s ->
+        if s == '1' then
+            Num.shiftLeftBy n 1 + 1
+        else
+            # Should error on invalid chars but walkTry is not exposed to userspace
+            Num.shiftLeftBy n 1
 
-# WIP To appease the compiler, no luck
-part1 = \numbers ->
-    List.len numbers
+bitCount = \numbers, index ->
+    mask = Num.shiftLeftBy 1 index
+
+    List.walk numbers { zeroes: 0, ones: 0 } \{ zeroes, ones }, num ->
+        if Num.bitwiseAnd num mask == 0 then
+            { zeroes: zeroes + 1, ones }
+        else
+            { zeroes, ones: ones + 1 }
