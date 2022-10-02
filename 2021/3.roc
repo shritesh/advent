@@ -22,9 +22,12 @@ parse = \input ->
         |> Str.trim
         |> Str.split "\n"
 
-    len = List.takeFirst strs 1 
-    |> List.map Str.countGraphemes 
-    |> List.sum # poor man's clz
+    # poor man's clz
+    len =
+        List.takeFirst strs 1
+        |> List.map Str.countGraphemes
+        |> List.sum
+
     numbers = List.map strs parseNum
 
     { numbers, len }
