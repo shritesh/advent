@@ -1,2 +1,3 @@
 zig-cache/
 advent-*
+*.roc-format-failed
