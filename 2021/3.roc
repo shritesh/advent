@@ -11,10 +11,12 @@ task =
         |> File.readUtf8
         |> Task.await
 
-    parse input
-    |> part1
-    |> Num.toStr
-    |> Stdout.line
+    parsed = parse input
+
+    p1 = part1 parsed |> Num.toStr
+    p2 = part2 parsed |> Num.toStr
+
+    Stdout.line "Part1: \(p1)\nPart2: \(p2)"
 
 parse = \input ->
     strs =
@@ -22,7 +24,7 @@ parse = \input ->
         |> Str.trim
         |> Str.split "\n"
 
-    # poor man's clz
+    # poor man's clz-ish
     len =
         List.takeFirst strs 1
         |> List.map Str.countGraphemes
@@ -41,18 +43,16 @@ parseNum = \line ->
             Num.shiftLeftBy n 1
 
 bitCount = \numbers, index ->
-    mask = Num.shiftLeftBy 1 index
-
     List.walk numbers { zeroes: 0, ones: 0 } \{ zeroes, ones }, num ->
-        if Num.bitwiseAnd num mask == 0 then
+        if Num.bitwiseAnd num (mask index) == 0 then
             { zeroes: zeroes + 1, ones }
         else
             { zeroes, ones: ones + 1 }
 
-setBit = \num, index ->
-    mask = Num.shiftLeftBy 1 index
+mask = \index -> Num.shiftLeftBy 1 index
 
-    Num.bitwiseOr num mask
+setBit = \num, index ->
+    Num.bitwiseOr num (mask index)
 
 part1 = \{ numbers, len } ->
     rates = List.walk (List.range 0 len) { gamma: 0, epsilon: 0 } \{ gamma, epsilon }, index ->
@@ -68,3 +68,33 @@ part1 = \{ numbers, len } ->
             { gamma, epsilon }
 
     rates.gamma * rates.epsilon
+
+filter = \numbers, index, keep ->
+    zeroAtIndex = \num -> Num.bitwiseAnd num (mask index) == 0
+
+    if keep == 0 then
+        List.keepIf numbers zeroAtIndex
+    else
+        List.dropIf numbers zeroAtIndex
+
+criteria = \numbers, len, which, tieBreaker ->
+    List.walkUntil (List.range 0 len) numbers \nums, index ->
+        if List.len nums == 1 then
+            Break nums
+        else
+            actualIndex = len - index - 1
+            { zeroes, ones } = bitCount nums actualIndex
+
+            keep = 
+                when which is
+                    Most -> if zeroes > ones then 0 else if ones > zeroes then 1 else tieBreaker
+                    Least -> if zeroes < ones then 0 else if ones < zeroes then 1 else tieBreaker
+
+            Continue (filter nums actualIndex keep)
+
+part2 = \{ numbers, len } ->
+    oxygen = criteria numbers len Most 1
+    co2 = criteria numbers len Least 0
+
+    List.join [oxygen, co2]
+    |> List.product
