@@ -10,9 +10,10 @@ task =
 
     when parse input is
         Ok lines ->
-            part1 lines
-            |> Num.toStr
-            |> Stdout.line
+            p1 = part1 lines |> Num.toStr
+            p2 = part2 lines |> Num.toStr
+
+            Stdout.line "Part 1: \(p1)\nPart 2: \(p2)"
 
         Err _ -> Stderr.line "Invalid input"
 
@@ -61,25 +62,45 @@ part1 = \lines ->
 
     countTwoOrMore coveredGrid
 
+part2 = \lines ->
+    coveredGrid = List.walk lines (makeGrid lines) \grid, { from, to } ->
+        if from.x == to.x then
+            List.walk (inclusiveRange from.y to.y) grid \innerGrid, y -> cover innerGrid from.x y
+        else if from.y == to.y then
+            List.walk (inclusiveRange from.x to.x) grid \innerGrid, x -> cover innerGrid x from.y
+        else
+            points = List.map2 (inclusiveRange from.x to.x) (inclusiveRange from.y to.y) \x, y -> { x, y }
+
+            List.walk points grid \innerGrid, { x, y } -> cover innerGrid x y
+
+    countTwoOrMore coveredGrid
+
 makeGrid = \lines ->
     width = lines |> List.joinMap (\{ from, to } -> [from.x, to.x]) |> List.max |> Result.withDefault 0
     height = lines |> List.joinMap (\{ from, to } -> [from.y, to.y]) |> List.max |> Result.withDefault 0
 
-    { width, height, data: List.repeat None (width * height) }
+    { width, data: List.repeat None (width * height) }
 
+# range is just broken in roc:
+# List.range 1 1 == List.range 1 2
 inclusiveRange = \a, b ->
-    min = if a < b then a else b
-    max = if a > b then a else b
+    if a == b then
+        List.range a b
+    else if a < b then
+        List.range a (b + 1)
+    else
+        # order matters
+        List.range b (a + 1) |> List.reverse
 
-    List.range min (max + 1)
+cover = \{ width, data }, x, y ->
+    index = width * x + y
 
-cover = \grid, x, y ->
-    index = grid.width * x + y
-
-    when List.replace grid.data index One is
-        { value: None, list } -> { grid & data: list }
-        { value: One, list } -> { grid & data: List.set list index TwoOrMore }
-        { value: TwoOrMore, list: _ } -> grid
+    # branch prediction (lol)
+    when List.replace data index One is
+        # If it was previously None, we guessed right
+        { value: None, list } -> { width, data: list }
+        # If it was One or TwoOrMore, set it to TwoOrMore
+        { value: _, list } -> { width, data: List.set list index TwoOrMore }
 
 countTwoOrMore = \grid ->
     grid.data
