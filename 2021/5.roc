@@ -21,7 +21,7 @@ parse = \input ->
     line <- input |> Str.trim |> Str.split "\n" |> List.mapTry
 
     when parseLine line is
-        Forth x1 y1 x2 y2 -> Ok { from: { x: x1, y: y1 }, to: { x: x2, y: y2 } }
+        Fourth { first, second, third, fourth } -> Ok { from: { x: first, y: second }, to: { x: third, y: fourth } }
         _ -> Err ParseError
 
 parseLine = \input ->
@@ -33,21 +33,21 @@ parseLine = \input ->
 
         when state is
             # Move to the state wanted
-            WantFirst -> First digit
-            WantSecond first -> Second first digit
-            WantThird first second -> Third first second digit
-            WantForth first second third -> Forth first second third digit
+            WantFirst -> First { first: digit }
+            WantSecond { first } -> Second { first, second: digit }
+            WantThird { first, second } -> Third { first, second, third: digit }
+            WantFourth { first, second, third } -> Fourth { first, second, third, fourth: digit }
             # Add the digit to the end of the current number
-            First first -> First (first * 10 + digit)
-            Second first second -> Second first (second * 10 + digit)
-            Third first second third -> Third first second (third * 10 + digit)
-            Forth first second third forth -> Forth first second third (forth * 10 + digit)
+            First { first } -> First { first: first * 10 + digit }
+            Second { first, second } -> Second { first, second: second * 10 + digit }
+            Third { first, second, third } -> Third { first, second, third: third * 10 + digit }
+            Fourth { first, second, third, fourth } -> Fourth { first, second, third, fourth: fourth * 10 + digit }
     else
         # not a digit, want the next number now
         when state is
-            First first -> WantSecond first
-            Second first second -> WantThird first second
-            Third first second third -> WantForth first second third
+            First numbers -> WantSecond numbers
+            Second numbers -> WantThird numbers
+            Third numbers -> WantFourth numbers
             _ -> state
 
 part1 = \lines ->
