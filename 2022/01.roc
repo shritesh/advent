@@ -15,7 +15,7 @@ main =
 
         Stdout.write "Part1: \(p1)\nPart2: \(p2)\n"
 
-    Task.onFail task \_ -> crash "Parse error"
+    Task.onFail task \_ -> crash "Failed to read and parse input"
 
 parse = \inputStr ->
     group <- Str.split inputStr "\n\n" |> List.mapTry
