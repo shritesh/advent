@@ -25,9 +25,9 @@ parse = \inputStr ->
 part1 = \calories ->
     when List.map calories List.sum |> List.sortDesc is
         [first, ..] -> first
-        _ -> crash "Empty list"
+        _ -> crash "Invalid input"
 
 part2 = \calories ->
     when List.map calories List.sum |> List.sortDesc is
         [first, second, third, ..] -> first + second + third
-        _ -> crash "Empty list"
+        _ -> crash "Invalid input"
