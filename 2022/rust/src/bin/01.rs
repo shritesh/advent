@@ -1,7 +1,7 @@
 static INPUT: &str = if cfg!(debug_assertions) {
-    include_str!("example.txt")
+    include_str!("../../../01_example.txt")
 } else {
-    include_str!("input.txt")
+    include_str!("../../../01.txt")
 };
 
 fn main() {
