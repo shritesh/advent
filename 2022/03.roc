@@ -55,6 +55,6 @@ part2 = \input ->
 
 scalarToPriority = \scalar ->
     when scalar is
-        lowercase if (lowercase >= 97 && lowercase <= 122) -> lowercase - 96 # 1 - 26
-        uppercase if (uppercase >= 65 && uppercase <= 90) -> uppercase - 64 + 26 # 27 - 52
+        lowercase if (lowercase >= 'a' && lowercase <= 'z') -> lowercase - 'a' + 1 # 1 - 26
+        uppercase if (uppercase >= 'A' && uppercase <= 'Z') -> uppercase - 'A' + 27 # 27 - 52
         _ -> crash "priority out of range"
