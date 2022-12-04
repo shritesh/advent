@@ -8,14 +8,14 @@ filename = "04.txt"
 main =
     task =
         inputStr <- Path.fromStr filename |> File.readUtf8 |> Task.await
-        input = parse inputStr
+        input <- parse inputStr |> Task.fromResult |> Task.await
 
         p1 = part1 input |> Num.toStr
         p2 = part2 input |> Num.toStr
 
-        Stdout.write "Part 1: \(p1)\nPart 2: \(p2)"
+        Stdout.write "Part 1: \(p1)\nPart 2: \(p2)\n"
 
-    Task.onFail task \_ -> crash "failed to read file: \(filename)"
+    Task.onFail task \_ -> crash "failed to read and parse file: \(filename)"
 
 part1 = \pairs ->
     { first, second } <- List.countIf pairs
@@ -26,17 +26,18 @@ part2 = \pairs ->
     (Set.intersection first second |> Set.len) != 0
 
 parse = \inputStr ->
-    line <- Str.replaceEach inputStr "," "-" |> unwrap |> Str.split "\n" |> List.map
-    nums = Str.split line "-" |> List.mapTry Str.toU32 |> unwrap
+    replaced <- Str.replaceEach inputStr "," "-" |> Result.try
+    line <- Str.split replaced "\n" |> List.mapTry
+    nums <- Str.split line "-" |> List.mapTry Str.toU32 |> Result.try
 
     when nums is
         [a, b, c, d] ->
-            {
+            Ok {
                 first: range a b |> Set.fromList,
                 second: range c d |> Set.fromList,
             }
 
-        _ -> crash "expected 4 nums in a line"
+        _ -> Err InvalidInput
 
 # range is still broken in roc: https://github.com/roc-lang/roc/issues/4196
 # List.range 1 1 == List.range 1 2
@@ -48,8 +49,3 @@ range = \a, b ->
     else
         # order matters
         List.range b (a + 1) |> List.reverse
-
-unwrap = \result ->
-    when result is
-        Ok x -> x
-        Err _ -> crash "unwrapped an error"
