@@ -27,28 +27,21 @@ part2 = \fs ->
     unused = 70000000 - dirSize fs ["/"]
     required = 30000000 - unused
 
-    min =
-        Dict.keys fs
-        |> List.map \dir -> dirSize fs dir
-        |> List.keepIf \n -> n >= required
-        |> List.min
-
-    when min is
-        Ok x -> x
-        Err _ -> crash "none of the dirs satisfy the problem"
+    Dict.keys fs
+    |> List.map \dir -> dirSize fs dir
+    |> List.keepIf \n -> n >= required
+    |> List.min
+    |> unwrap "None of the dirs satisfy the required size"
 
 dirSize = \fs, dir ->
-    when Dict.get fs dir is
-        Ok list ->
-            sizes =
-                entry <- List.map list
-                when entry is
-                    File _name size -> size
-                    Dir subdir -> dirSize fs subdir
+    sizes =
+        entry <- Dict.get fs dir |> unwrap "Dir not found" |> List.map
 
-            List.sum sizes
+        when entry is
+            File _name size -> size
+            Dir subdir -> dirSize fs subdir
 
-        Err _ -> crash "Dir not found"
+    List.sum sizes
 
 parse = \inputStr ->
     acc =
@@ -80,9 +73,9 @@ parse = \inputStr ->
                         [""] -> []
                         ["dir", d] -> [List.append state.cwd d |> Dir]
                         [size, name] ->
-                            when Str.toNat size is
-                                Ok s -> [File name s]
-                                Err _ -> crash "invalid size '\(size)' for '\(name)'"
+                            sz = Str.toNat size |> unwrap "invalid size '\(size)' for '\(name)'"
+
+                            [File name sz]
 
                         _ -> crash "invalid listing"
 
@@ -91,3 +84,8 @@ parse = \inputStr ->
             _ -> crash "invalid command"
 
     acc.fs
+
+unwrap = \result, msg ->
+    when result is
+        Ok x -> x
+        Err _ -> crash msg
