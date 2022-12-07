@@ -11,12 +11,11 @@ main =
         input = parse inputStr
 
         p1 = part1 input |> Num.toStr
+        p2 = part2 input |> Num.toStr
 
-        p2 <- part2 input |> Result.map Num.toStr |> Task.fromResult |> Task.await
+        Stdout.write "Part 1: \(p1)\nPart 2: \(p2)\n"
 
-        Stdout.write "Part 1: \(p1)\n Part 2: \(p2)\n"
-
-    Task.onFail task \_ -> crash "Unable to read input or find results"
+    Task.onFail task \_ -> crash "Unable to read input"
 
 part1 = \fs ->
     Dict.keys fs
@@ -28,10 +27,15 @@ part2 = \fs ->
     unused = 70000000 - dirSize fs ["/"]
     required = 30000000 - unused
 
-    Dict.keys fs
-    |> List.map \dir -> dirSize fs dir
-    |> List.keepIf \n -> n >= required
-    |> List.min
+    min =
+        Dict.keys fs
+        |> List.map \dir -> dirSize fs dir
+        |> List.keepIf \n -> n >= required
+        |> List.min
+
+    when min is
+        Ok x -> x
+        Err _ -> crash "none of the dirs satisfy the problem"
 
 dirSize = \fs, dir ->
     when Dict.get fs dir is
