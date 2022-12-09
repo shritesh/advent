@@ -43,7 +43,7 @@ move = \state, { direction, count } ->
             Right -> { x: state.head.x + 1, y: state.head.y }
 
         tails =
-            prev, tail <- scanAccessMap state.tails head .location
+            prev, tail <- scanWith state.tails head .location
             distx = prev.x - tail.location.x
             disty = prev.y - tail.location.y
 
@@ -67,7 +67,7 @@ norm = \n ->
         _ if n > 0 -> 1
         _ -> 0
 
-scanAccessMap = \list, init, accessor, fn ->
+scanWith = \list, init, accessor, fn ->
     List.walk list { state: init, acc: [] } \{ state, acc }, elem ->
         res = fn state elem
 
