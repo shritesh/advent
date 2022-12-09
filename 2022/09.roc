@@ -60,7 +60,6 @@ move = \state, { direction, count } ->
 
         move { head, tails } { direction, count: count - 1 }
 
-# convert to -1, 0 or 1
 sign = \n ->
     when n is
         _ if n < 0 -> -1
