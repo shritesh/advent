@@ -30,35 +30,32 @@ run = \motions, knots ->
 
     when result is
         Ok x -> x
-        Err _ -> crash "need more knots"
+        Err _ -> crash "unreachable"
 
-move = \state, { direction, count } ->
-    if count == 0 then
-        state
-    else
-        head = when direction is
-            Up -> { x: state.head.x, y: state.head.y + 1 }
-            Down -> { x: state.head.x, y: state.head.y - 1 }
-            Left -> { x: state.head.x - 1, y: state.head.y }
-            Right -> { x: state.head.x + 1, y: state.head.y }
+move = \s, { direction, count } ->
+    state, _ <- List.range { start: At 0, end: Before count } |> List.walk s
 
-        tails =
-            prev, tail <- scanWith state.tails head .location
-            distx = prev.x - tail.location.x
-            disty = prev.y - tail.location.y
+    head = when direction is
+        Up -> { x: state.head.x, y: state.head.y + 1 }
+        Down -> { x: state.head.x, y: state.head.y - 1 }
+        Left -> { x: state.head.x - 1, y: state.head.y }
+        Right -> { x: state.head.x + 1, y: state.head.y }
 
-            location =
-                # touches
-                if distx >= -1 && distx <= 1 && disty >= -1 && disty <= 1 then
-                    tail.location
-                else
-                    { x: tail.location.x + sign distx, y: tail.location.y + sign disty }
+    tails =
+        prev, tail <- scanWith state.tails head .location
+        distx = prev.x - tail.location.x
+        disty = prev.y - tail.location.y
 
+        # touches
+        if distx >= -1 && distx <= 1 && disty >= -1 && disty <= 1 then
+            tail
+        else
+            location = { x: tail.location.x + sign distx, y: tail.location.y + sign disty }
             visits = Set.insert tail.visits location
 
             { location, visits }
 
-        move { head, tails } { direction, count: count - 1 }
+    { head, tails }
 
 sign = \n ->
     when Num.compare n 0 is
