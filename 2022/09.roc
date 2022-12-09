@@ -61,10 +61,10 @@ move = \state, { direction, count } ->
         move { head, tails } { direction, count: count - 1 }
 
 sign = \n ->
-    when n is
-        _ if n < 0 -> -1
-        _ if n > 0 -> 1
-        _ -> 0
+    when Num.compare n 0 is
+        LT -> -1
+        GT -> 1
+        EQ -> 0
 
 scanWith = \list, init, accessor, fn ->
     List.walk list { state: init, acc: [] } \{ state, acc }, elem ->
