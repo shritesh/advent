@@ -52,7 +52,7 @@ move = \state, { direction, count } ->
                 if distx >= -1 && distx <= 1 && disty >= -1 && disty <= 1 then
                     tail.location
                 else
-                    { x: tail.location.x + norm distx, y: tail.location.y + norm disty }
+                    { x: tail.location.x + sign distx, y: tail.location.y + sign disty }
 
             visits = Set.insert tail.visits location
 
@@ -61,7 +61,7 @@ move = \state, { direction, count } ->
         move { head, tails } { direction, count: count - 1 }
 
 # convert to -1, 0 or 1
-norm = \n ->
+sign = \n ->
     when n is
         _ if n < 0 -> -1
         _ if n > 0 -> 1
