@@ -46,24 +46,14 @@ run = \{ items, monkeys }, rounds, mapper ->
         trueItems = List.keepIf newItems \n -> n % monkey.test == 0
         falseItems = List.dropIf newItems \n -> n % monkey.test == 0
 
-        trueMonkeyItems = List.join [
-            List.get state.items monkey.ifTrue |> unwrap,
-            trueItems,
-        ]
-
-        falseMonkeyItems = List.join [
-            List.get state.items monkey.ifFalse |> unwrap,
-            falseItems,
-        ]
-
         finalItems =
             List.mapWithIndex state.items \list, j ->
                 if j == id then
                     []
                 else if j == monkey.ifTrue then
-                    trueMonkeyItems
+                    List.join [list, trueItems]
                 else if j == monkey.ifFalse then
-                    falseMonkeyItems
+                    List.join [list, falseItems]
                 else
                     list
 
