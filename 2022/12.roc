@@ -47,12 +47,11 @@ helper = \grid, toVisit, hops ->
                 candidatePosition = { col: currentPosition.col + c, row: currentPosition.row + r }
 
                 when Dict.get grid candidatePosition is
-                    Ok candidateHeight if candidateHeight == currentHeight || candidateHeight == currentHeight + 1 ->
+                    Ok candidateHeight if candidateHeight <= currentHeight + 1 ->
                         candidateHop = Dict.get state candidatePosition |> unwrap "candidateHop"
-                        alt = currentHop + 1
 
-                        if alt < candidateHop then
-                            Dict.insert state candidatePosition alt
+                        if currentHop < candidateHop then
+                            Dict.insert state candidatePosition (currentHop + 1)
                         else
                             state
 
