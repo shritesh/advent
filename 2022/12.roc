@@ -11,47 +11,70 @@ main =
         input = parse inputStr
 
         p1 = part1 input |> Num.toStr
+        p2 = part2 input |> Num.toStr
 
-        Stdout.write "Part 1: \(p1)\n"
+        Stdout.write "Part 1: \(p1)\nPart 2: \(p2)\n"
 
     Task.onFail task \_ -> crash "Failed to read input"
 
-part1 = \grid ->
-    toVisit = Set.fromList (Dict.keys grid)
-    hops =
-        Dict.keys grid
-        |> List.map \k -> if k == { row: 20, col: 0 } then T k 0 else T k Num.maxU32
-        |> Dict.fromList
+part1 = \input ->
+    (T start _) = List.findFirst input (\T _ v -> v == 'S') |> unwrap
+    (T stop _) = List.findFirst input (\T _ v -> v == 'E') |> unwrap
 
-    finalHops = helper grid toVisit hops
+    toVisit = List.map input (\T k _ -> k) |> Set.fromList
+    hops = List.map input (\T k _ -> if k == start then T k 0 else T k Num.maxU32) |> Dict.fromList
 
-    Dict.get finalHops { row: 20, col: 52 } |> unwrap "finalHops"
+    list = List.map input \T k v ->
+        if v == 'S' then
+            T k 0
+        else if v == 'E' then
+            T k 26
+        else
+            T k (v - 'a')
+
+    Dict.fromList list
+    |> helper toVisit hops
+    |> Dict.get stop
+    |> unwrap
+
+part2 = \input ->
+    (T start _) = List.findFirst input (\T _ v -> v == 'E') |> unwrap
+
+    toVisit = List.map input (\T k _ -> k) |> Set.fromList
+    hops = List.map input (\T k _ -> if k == start then T k 0 else T k Num.maxU32) |> Dict.fromList
+
+    list = List.map input \T k v ->
+        if v == 'S' then
+            T k 26
+        else if v == 'E' then
+            T k 0
+        else
+            T k (26 - (v - 'a'))
+
+    final = Dict.fromList list |> helper toVisit hops
+
+    List.keepIf list \T _ v -> v == 26
+    |> List.map \T k _ -> k
+    |> List.map \position -> Dict.get final position |> unwrap
+    |> List.min
+    |> unwrap
 
 helper = \grid, toVisit, hops ->
     when nextVisit toVisit hops is
-        Ok { position: currentPosition, toVisit: newToVisit } ->
-            currentHeight = Dict.get grid currentPosition |> unwrap "currentHeight"
-            hx = Num.toStr currentPosition.row
-            hy = Num.toStr currentPosition.col
-            currentHop = Dict.get hops currentPosition |> unwrap "currentHop \(hx) \(hy)"
+        Ok { position, toVisit: newToVisit } ->
+            height = Dict.get grid position |> unwrap
+            hop = Dict.get hops position |> unwrap
 
             newHops =
-                state, { c, r } <- [
-                        { r: -1, c: 0 }, # up
-                        { r: 1, c: 0 }, # down
-                        { r: 0, c: -1 }, # left
-                        { r: 0, c: 1 }, # right
-                    ]
-                    |> List.walk hops
+                state, { r, c } <- [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }] |> List.walk hops
+                adjPosition = { col: position.col + c, row: position.row + r }
 
-                candidatePosition = { col: currentPosition.col + c, row: currentPosition.row + r }
+                when Dict.get grid adjPosition is
+                    Ok adjHeight if adjHeight <= height + 1 ->
+                        adjHop = Dict.get state adjPosition |> unwrap
 
-                when Dict.get grid candidatePosition is
-                    Ok candidateHeight if candidateHeight <= currentHeight + 1 ->
-                        candidateHop = Dict.get state candidatePosition |> unwrap "candidateHop"
-
-                        if currentHop < candidateHop then
-                            Dict.insert state candidatePosition (currentHop + 1)
+                        if hop < adjHop then
+                            Dict.insert state adjPosition (hop + 1)
                         else
                             state
 
@@ -72,26 +95,16 @@ nextVisit = \toVisit, hops ->
     { position, toVisit: Set.remove toVisit position }
 
 parse = \inputStr ->
-    # TODO: Return start and end too
-    list =
+    lists =
         line, row <- Str.split inputStr "\n" |> List.mapWithIndex
         s, col <- Str.toScalars line |> List.mapWithIndex
 
-        c =
-            if s >= 'a' && s <= 'z' then
-                s - 'a'
-            else if s == 'S' then
-                0
-            else if s == 'E' then
-                26
-            else
-                crash "potato"
+        # I32 makes out of bounds indexing easier later
+        T { row: Num.toI32 row, col: Num.toI32 col } s
 
-        T { row: Num.toI32 row, col: Num.toI32 col } c
+    List.join lists
 
-    List.join list |> Dict.fromList
-
-unwrap = \result, msg ->
+unwrap = \result ->
     when result is
         Ok x -> x
-        _ -> crash msg
+        _ -> crash "unwrapped an err"
