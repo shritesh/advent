@@ -63,11 +63,8 @@ travel = \grid, toVisit ->
                 adjPosition = { col: position.col + c, row: position.row + r }
 
                 when Dict.get state adjPosition is
-                    Ok { height: adjHeight, hop: adjHop } if adjHeight <= height + 1 ->
-                        if hop < adjHop then
-                            Dict.insert state adjPosition { height: adjHeight, hop: hop + 1 }
-                        else
-                            state
+                    Ok { height: adjHeight, hop: adjHop } if adjHeight <= height + 1 && hop < adjHop ->
+                        Dict.insert state adjPosition { height: adjHeight, hop: hop + 1 }
 
                     _ -> state
 
