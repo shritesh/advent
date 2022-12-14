@@ -18,77 +18,70 @@ main =
     Task.onFail task \_ -> crash "Failed to read input"
 
 part1 = \input ->
-    (T start _) = List.findFirst input (\T _ v -> v == 'S') |> unwrap
     (T stop _) = List.findFirst input (\T _ v -> v == 'E') |> unwrap
 
-    toVisit = List.map input (\T k _ -> k) |> Set.fromList
-    hops = List.map input (\T k _ -> if k == start then T k 0 else T k Num.maxU32) |> Dict.fromList
-
     list = List.map input \T k v ->
         if v == 'S' then
-            T k 0
+            T k { height: 0, hop: 0 }
         else if v == 'E' then
-            T k 26
+            T k { height: 26, hop: Num.maxU32 }
         else
-            T k (v - 'a')
+            T k { height: (v - 'a'), hop: Num.maxU32 }
+
+    toVisit = List.map list (\T k _ -> k) |> Set.fromList
 
     Dict.fromList list
-    |> helper toVisit hops
+    |> travel toVisit
     |> Dict.get stop
     |> unwrap
+    |> .hop
 
 part2 = \input ->
-    (T start _) = List.findFirst input (\T _ v -> v == 'E') |> unwrap
-
-    toVisit = List.map input (\T k _ -> k) |> Set.fromList
-    hops = List.map input (\T k _ -> if k == start then T k 0 else T k Num.maxU32) |> Dict.fromList
-
     list = List.map input \T k v ->
         if v == 'S' then
-            T k 26
+            T k { height: 26, hop: Num.maxU32 }
         else if v == 'E' then
-            T k 0
+            T k { height: 0, hop: 0 }
         else
-            T k (26 - (v - 'a'))
+            T k { height: 26 - (v - 'a'), hop: Num.maxU32 }
 
-    final = Dict.fromList list |> helper toVisit hops
+    toVisit = List.map list (\T k _ -> k) |> Set.fromList
 
-    List.keepIf list \T _ v -> v == 26
-    |> List.map \T k _ -> k
-    |> List.map \position -> Dict.get final position |> unwrap
+    Dict.fromList list
+    |> travel toVisit
+    |> Dict.toList
+    |> List.keepIf \T _ { height } -> height == 26
+    |> List.map \T _ { hop } -> hop
     |> List.min
     |> unwrap
 
-helper = \grid, toVisit, hops ->
-    when nextVisit toVisit hops is
+travel = \grid, toVisit ->
+    when next grid toVisit is
         Ok { position, toVisit: newToVisit } ->
-            height = Dict.get grid position |> unwrap
-            hop = Dict.get hops position |> unwrap
+            { height, hop } = Dict.get grid position |> unwrap
 
-            newHops =
-                state, { r, c } <- [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }] |> List.walk hops
+            newGrid =
+                state, { r, c } <- [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }] |> List.walk grid
                 adjPosition = { col: position.col + c, row: position.row + r }
 
-                when Dict.get grid adjPosition is
-                    Ok adjHeight if adjHeight <= height + 1 ->
-                        adjHop = Dict.get state adjPosition |> unwrap
-
+                when Dict.get state adjPosition is
+                    Ok { height: adjHeight, hop: adjHop } if adjHeight <= height + 1 ->
                         if hop < adjHop then
-                            Dict.insert state adjPosition (hop + 1)
+                            Dict.insert state adjPosition { height: adjHeight, hop: hop + 1 }
                         else
                             state
 
                     _ -> state
 
-            helper grid newToVisit newHops
+            travel newGrid newToVisit
 
-        Err _ -> hops
+        Err _ -> grid
 
-nextVisit = \toVisit, hops ->
+next = \grid, toVisit ->
     (T position _) <-
-        Dict.toList hops
+        Dict.toList grid
         |> List.keepIf \T k _ -> Set.contains toVisit k
-        |> List.sortWith \T _ a, T _ b -> Num.compare a b
+        |> List.sortWith \T _ a, T _ b -> Num.compare a.hop b.hop
         |> List.first
         |> Result.map
 
@@ -99,7 +92,7 @@ parse = \inputStr ->
         line, row <- Str.split inputStr "\n" |> List.mapWithIndex
         s, col <- Str.toScalars line |> List.mapWithIndex
 
-        # I32 makes out of bounds indexing easier later
+        # I32 simplifies out of range indexing
         T { row: Num.toI32 row, col: Num.toI32 col } s
 
     List.join lists
