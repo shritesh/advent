@@ -15,7 +15,7 @@ main =
 
         Stdout.write "Part 1: \(p1)\nPart 2: \(p2)\n"
 
-    Task.onFail task \_ -> crash "Failed to read input"
+    Task.onFail task \_ -> Stdout.line "Failed to read input"
 
 part1 = \input ->
     (T stop _) = List.findFirst input (\T _ v -> v == 'E') |> unwrap
@@ -57,9 +57,7 @@ part2 = \input ->
 
 travel = \grid, toVisit ->
     when next grid toVisit is
-        Ok { position, toVisit: newToVisit } ->
-            { height, hop } = Dict.get grid position |> unwrap
-
+        Ok { position, height, hop, toVisit: newToVisit } ->
             newGrid =
                 state, { r, c } <- [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }] |> List.walk grid
                 adjPosition = { col: position.col + c, row: position.row + r }
@@ -78,14 +76,14 @@ travel = \grid, toVisit ->
         Err _ -> grid
 
 next = \grid, toVisit ->
-    (T position _) <-
+    (T position { height, hop }) <-
         Dict.toList grid
         |> List.keepIf \T k _ -> Set.contains toVisit k
         |> List.sortWith \T _ a, T _ b -> Num.compare a.hop b.hop
         |> List.first
         |> Result.map
 
-    { position, toVisit: Set.remove toVisit position }
+    { position, height, hop, toVisit: Set.remove toVisit position }
 
 parse = \inputStr ->
     lists =
