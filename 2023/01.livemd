@@ -1,0 +1,132 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 1
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Part 1
+
+```elixir
+example = """
+1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet
+"""
+
+expected = [12, 38, 15, 77]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[12, 38, 15, 77]
+```
+
+```elixir
+defmodule Part1 do
+  def run(values) do
+    for value <- String.split(values, "\n", trim: true) do
+      digits =
+        value
+        |> String.to_charlist()
+        |> Enum.filter(&(&1 in ?0..?9))
+
+      [List.first(digits), List.last(digits)]
+      |> String.Chars.to_string()
+      |> String.to_integer()
+    end
+  end
+end
+
+Part1.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+input = Kino.Input.textarea("Puzzle Input")
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+53921
+```
+
+## Part 2
+
+```elixir
+example = """
+two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen
+"""
+
+expected = [29, 83, 13, 24, 42, 14, 76]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[29, 83, 13, 24, 42, 14, 76]
+```
+
+```elixir
+defmodule Part2 do
+  @regex ~S(\d|zero|one|two|three|four|five|six|seven|eight|nine)
+
+  @digits ~r/#{@regex}/
+  # hacky workaround for overlapping matches
+  @lastdigits ~r/.*(#{@regex}).*$/
+
+  @integers ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+
+  def run(values) do
+    for value <- String.split(values, "\n", trim: true) do
+      [Regex.run(@digits, value), Regex.run(@lastdigits, value, capture: :all_but_first)]
+      |> List.flatten()
+      |> Enum.map(&(Enum.find_index(@integers, fn x -> x == &1 end) || String.to_integer(&1)))
+      |> then(&(List.first(&1) * 10 + List.last(&1)))
+    end
+  end
+end
+
+Part2.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+54676
+```
