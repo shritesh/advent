@@ -1,0 +1,145 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 2
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+## Part 1
+
+```elixir
+example = """
+Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
+"""
+
+configuration = %{"red" => 12, "green" => 13, "blue" => 14}
+
+expected = [1, 2, 5]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[1, 2, 5]
+```
+
+```elixir
+defmodule Part1 do
+  defp parse_line(line) do
+    [_, rest] = String.split(line, ": ")
+
+    for set <- String.split(rest, "; ") do
+      for cube <- String.split(set, ", "), into: %{} do
+        [count, color] = String.split(cube, " ")
+        {color, String.to_integer(count)}
+      end
+    end
+  end
+
+  def parse(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.map(&parse_line/1)
+  end
+
+  def possible?(game, configuration) do
+    Enum.all?(configuration, fn {color, count} ->
+      (game[color] || 0) <= count
+    end)
+  end
+
+  def run(input, configuration) do
+    input
+    |> parse()
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {games, _} -> Enum.all?(games, &possible?(&1, configuration)) end)
+    |> Enum.map(fn {_, day} -> day end)
+  end
+end
+
+Part1.run(example, configuration) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run(configuration)
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+2541
+```
+
+## Part 2
+
+```elixir
+expected = [48, 12, 1560, 630, 36]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[48, 12, 1560, 630, 36]
+```
+
+```elixir
+defmodule Part2 do
+  def mincubes(game) do
+    Enum.reduce(game, %{}, fn set, acc ->
+      Enum.reduce(set, acc, fn {color, count}, acc ->
+        Map.update(acc, color, count, &max(&1, count))
+      end)
+    end)
+  end
+
+  def run(input) do
+    for game <- Part1.parse(input) do
+      game
+      |> mincubes()
+      |> Map.values()
+      |> Enum.product()
+    end
+  end
+end
+
+Part2.run(example)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[48, 12, 1560, 630, 36]
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+66016
+```
