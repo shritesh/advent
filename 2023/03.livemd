@@ -41,12 +41,10 @@ expected = 4361
 
 ```elixir
 defmodule Part1 do
-  @regex ~r/\d+|[^.\n]/
-
   def parse(input) do
     for {line, row} <- String.split(input, "\n", trim: true) |> Enum.with_index(), reduce: %{} do
       acc ->
-        for [{col, len}] <- Regex.scan(@regex, line, return: :index), into: acc do
+        for [{col, len}] <- Regex.scan(~r/\d+|[^.]/, line, return: :index), into: acc do
           string = String.slice(line, col, len)
 
           case Integer.parse(string) do
@@ -60,17 +58,13 @@ defmodule Part1 do
   def classify({_, value}) when is_integer(value), do: :number
   def classify({_, _}), do: :symbol
 
-  def adjacents({{row, col}, integer}) do
+  def adjacent?({{row, col}, integer}, check) do
     digits = Integer.digits(integer) |> Enum.count()
     top_bottom = Enum.map((col - 1)..(col + digits), &[{row - 1, &1}, {row + 1, &1}])
     left_right = [{row, col - 1}, {row, col + digits}]
 
     List.flatten([left_right, top_bottom])
-  end
-
-  def parts?(number, symbol_set) do
-    adjacents(number)
-    |> Enum.any?(&MapSet.member?(symbol_set, &1))
+    |> Enum.any?(&Enum.member?(check, &1))
   end
 
   def run(input) do
@@ -78,7 +72,7 @@ defmodule Part1 do
 
     symbol_set = MapSet.new(symbols, &elem(&1, 0))
 
-    Enum.filter(numbers, &parts?(&1, symbol_set))
+    Enum.filter(numbers, &adjacent?(&1, symbol_set))
     |> Enum.map(&elem(&1, 1))
     |> Enum.sum()
   end
@@ -122,22 +116,17 @@ defmodule Part2 do
   def classify({_, value}) when is_integer(value), do: :number
   def classify({_, _}), do: :symbol
 
-  def gear?(number, gear) do
-    Part1.adjacents(number)
-    |> Enum.any?(&(&1 == gear))
-  end
-
   def run(input) do
     %{maybe_gear: maybe_gears, number: numbers} =
       Part1.parse(input) |> Enum.group_by(&classify/1)
 
-    gears =
+    gear_parts =
       for gear <- Enum.map(maybe_gears, &elem(&1, 0)) do
-        Enum.filter(numbers, &gear?(&1, gear))
+        Enum.filter(numbers, &Part1.adjacent?(&1, [gear]))
         |> Enum.map(&elem(&1, 1))
       end
 
-    Enum.filter(gears, &(Enum.count(&1) == 2))
+    Enum.filter(gear_parts, &(Enum.count(&1) == 2))
     |> Enum.map(&Enum.product/1)
   end
 end
