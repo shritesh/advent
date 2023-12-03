@@ -1,0 +1,164 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 3
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+## Part 1
+
+```elixir
+example = """
+467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..
+"""
+
+expected = 4361
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+4361
+```
+
+```elixir
+defmodule Part1 do
+  @regex ~r/\d+|[^.\n]/
+
+  def parse(input) do
+    for {line, row} <- String.split(input, "\n", trim: true) |> Enum.with_index(), reduce: %{} do
+      acc ->
+        for [{col, len}] <- Regex.scan(@regex, line, return: :index), into: acc do
+          string = String.slice(line, col, len)
+
+          case Integer.parse(string) do
+            :error -> {{row, col}, string}
+            {int, ""} -> {{row, col}, int}
+          end
+        end
+    end
+  end
+
+  def classify({_, value}) when is_integer(value), do: :number
+  def classify({_, _}), do: :symbol
+
+  def adjacents({{row, col}, integer}) do
+    digits = Integer.digits(integer) |> Enum.count()
+    top_bottom = Enum.map((col - 1)..(col + digits), &[{row - 1, &1}, {row + 1, &1}])
+    left_right = [{row, col - 1}, {row, col + digits}]
+
+    List.flatten([left_right, top_bottom])
+  end
+
+  def parts?(number, symbol_set) do
+    adjacents(number)
+    |> Enum.any?(&MapSet.member?(symbol_set, &1))
+  end
+
+  def run(input) do
+    %{symbol: symbols, number: numbers} = parse(input) |> Enum.group_by(&classify/1)
+
+    symbol_set = MapSet.new(symbols, &elem(&1, 0))
+
+    Enum.filter(numbers, &parts?(&1, symbol_set))
+    |> Enum.map(&elem(&1, 1))
+    |> Enum.sum()
+  end
+end
+
+Part1.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+529618
+```
+
+## Part 2
+
+```elixir
+expected = [16345, 451_490]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[16345, 451490]
+```
+
+```elixir
+defmodule Part2 do
+  def classify({_, "*"}), do: :maybe_gear
+  def classify({_, value}) when is_integer(value), do: :number
+  def classify({_, _}), do: :symbol
+
+  def gear?(number, gear) do
+    Part1.adjacents(number)
+    |> Enum.any?(&(&1 == gear))
+  end
+
+  def run(input) do
+    %{maybe_gear: maybe_gears, number: numbers} =
+      Part1.parse(input) |> Enum.group_by(&classify/1)
+
+    gears =
+      for gear <- Enum.map(maybe_gears, &elem(&1, 0)) do
+        Enum.filter(numbers, &gear?(&1, gear))
+        |> Enum.map(&elem(&1, 1))
+      end
+
+    Enum.filter(gears, &(Enum.count(&1) == 2))
+    |> Enum.map(&Enum.product/1)
+  end
+end
+
+Part2.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+77509019
+```
