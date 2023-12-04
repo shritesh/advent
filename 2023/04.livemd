@@ -1,0 +1,138 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 4
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+example = """
+Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
+"""
+
+input = Kino.Input.textarea("Input", default: example)
+```
+
+## Part 1
+
+```elixir
+expected = [8, 2, 2, 1, 0, 0]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[8, 2, 2, 1, 0, 0]
+```
+
+```elixir
+defmodule Part1 do
+  def parse(input) do
+    for line <- String.split(input, "\n", trim: true) do
+      [_, rest] = String.split(line, ": ")
+
+      for numbers <- String.split(rest, "|") do
+        for number <- String.split(numbers, " ", trim: true), into: MapSet.new() do
+          String.to_integer(number)
+        end
+      end
+    end
+  end
+
+  def run(input) do
+    for [winnings, haves] <- parse(input) do
+      case MapSet.intersection(winnings, haves) |> Enum.count() do
+        0 -> 0
+        n -> 2 ** (n - 1)
+      end
+    end
+  end
+end
+
+Part1.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+21558
+```
+
+## Part 2
+
+```elixir
+expected = [1, 2, 4, 8, 14, 1]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[1, 2, 4, 8, 14, 1]
+```
+
+```elixir
+defmodule Part2 do
+  def inc(acc, i), do: Map.update(acc, i, 1, &(&1 + 1))
+
+  def run(input) do
+    Part1.parse(input)
+    |> Enum.map(fn [winnings, haves] -> Enum.count(MapSet.intersection(winnings, haves)) end)
+    |> Enum.with_index(1)
+    |> Enum.reduce(%{}, fn
+      {0, i}, acc ->
+        inc(acc, i)
+
+      {count, i}, acc ->
+        acc = inc(acc, i)
+
+        Enum.to_list((i + 1)..(i + count))
+        |> List.duplicate(Map.get(acc, i))
+        |> List.flatten()
+        |> Enum.reduce(acc, &inc(&2, &1))
+    end)
+    |> Map.values()
+  end
+end
+
+Part2.run(example)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[1, 2, 4, 8, 14, 1]
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> Enum.sum()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+10425665
+```
