@@ -1,0 +1,186 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 5
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+example = """
+seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4
+"""
+
+input = Kino.Input.textarea("Input", default: example)
+```
+
+## Part 1
+
+```elixir
+expected = [82, 43, 86, 35]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+~c"R+V#"
+```
+
+```elixir
+defmodule Part1 do
+  def parse(input) do
+    ["seeds: " <> seeds | maps] = String.split(input, "\n\n", trim: true)
+
+    mappings =
+      for map <- maps do
+        [_map_type, mapping] = String.split(map, ":\n", trim: true)
+
+        for line <- String.split(mapping, "\n", trim: true) do
+          [dst, src, len] = String.split(line, " ") |> Enum.map(&String.to_integer/1)
+          {src, src + len - 1, src - dst}
+        end
+        |> Enum.sort_by(&elem(&1, 0))
+      end
+
+    {String.split(seeds, " ") |> Enum.map(&String.to_integer/1), mappings}
+  end
+
+  def map_to(maps, src) do
+    src - Enum.find_value(maps, 0, fn {start, stop, diff} -> src in start..stop && diff end)
+  end
+
+  def run(input) do
+    {seeds, mapping} = parse(input)
+
+    for seed <- seeds do
+      Enum.reduce(mapping, seed, &map_to/2)
+    end
+  end
+end
+
+Part1.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> Enum.min()
+|> then(&Kino.Markdown.new("Part 1: #{&1}"))
+```
+
+## Part 2
+
+```elixir
+expected = 46
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+46
+```
+
+```elixir
+defmodule Part2 do
+  def map_to(range, []), do: [range]
+
+  def map_to({start, stop}, [{src_start, src_stop, diff} | rest]) do
+    cond do
+      # fully within
+      start >= src_start and stop <= src_stop ->
+        [{start - diff, stop - diff}]
+
+      # start unmappable, stop within
+      start < src_start and stop in src_start..src_stop ->
+        [
+          {start, src_start - 1},
+          {src_start - diff, stop - diff}
+        ]
+
+      # start within, stop unmappable or maybe next
+      start in src_start..src_stop ->
+        [
+          {start - diff, src_stop - diff}
+          | map_to({src_stop + 1, stop}, rest)
+        ]
+
+      # unmappable or maybe next
+      true ->
+        map_to({start, stop}, rest)
+    end
+  end
+
+  def map(ranges, []), do: ranges
+
+  def map(ranges, [mapping | rest]) do
+    Enum.flat_map(ranges, &map_to(&1, mapping))
+    |> map(rest)
+  end
+
+  def run(input) do
+    {seed_ranges, mapping} = Part1.parse(input)
+
+    Enum.chunk_every(seed_ranges, 2)
+    |> Enum.map(fn [start, count] -> {start, start + count - 1} end)
+    |> map(mapping)
+    |> Enum.map(&elem(&1, 0))
+    |> Enum.min()
+  end
+end
+
+Part2.run(example)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+46
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> then(&Kino.Markdown.new("Part 2: #{&1}"))
+```
