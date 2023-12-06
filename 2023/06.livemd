@@ -1,0 +1,116 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 6
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+example = """
+Time:      7  15   30
+Distance:  9  40  200
+"""
+
+input = Kino.Input.textarea("Input", default: example)
+```
+
+## Part 1
+
+```elixir
+expected = [4, 8, 9]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[4, 8, 9]
+```
+
+```elixir
+defmodule Part1 do
+  def parse(input) do
+    Regex.scan(~r/\d+/, input)
+    |> List.flatten()
+    |> Enum.map(&String.to_integer/1)
+    |> then(&Enum.split(&1, div(Enum.count(&1), 2)))
+    |> Tuple.to_list()
+    |> Enum.zip()
+  end
+
+  def ways({time, distance}) do
+    0..time
+    |> Enum.map(fn hold ->
+      remaining = time - hold
+      hold * remaining
+    end)
+    |> Enum.filter(&(distance < &1))
+    |> Enum.count()
+  end
+
+  def run(input) do
+    parse(input)
+    |> Enum.map(&ways/1)
+  end
+end
+
+Part1.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> Enum.product()
+|> then(&Kino.Markdown.new("Part 1: #{&1}"))
+```
+
+## Part 2
+
+```elixir
+expected = 71503
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+71503
+```
+
+```elixir
+defmodule Part2 do
+  def parse(input) do
+    String.split(input, "\n", trim: true)
+    |> Enum.map(&Enum.join(Regex.scan(~r/\d+/, &1)))
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def run(input) do
+    [time, distance] = parse(input)
+    Part1.ways({time, distance})
+  end
+end
+
+Part2.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> then(&Kino.Markdown.new("Part 2: #{&1}"))
+```
