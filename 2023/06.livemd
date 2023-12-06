@@ -34,17 +34,16 @@ expected = [4, 8, 9]
 ```elixir
 defmodule Part1 do
   def parse(input) do
-    Regex.scan(~r/\d+/, input)
-    |> List.flatten()
-    |> Enum.map(&String.to_integer/1)
-    |> then(&Enum.split(&1, div(Enum.count(&1), 2)))
-    |> Tuple.to_list()
+    for line <- String.split(input, "\n", trim: true) do
+      Regex.scan(~r/\d+/, line)
+      |> List.flatten()
+      |> Enum.map(&String.to_integer/1)
+    end
     |> Enum.zip()
   end
 
   def ways({time, distance}) do
-    0..time
-    |> Enum.map(fn hold ->
+    Enum.map(0..time, fn hold ->
       remaining = time - hold
       hold * remaining
     end)
@@ -89,9 +88,11 @@ expected = 71503
 ```elixir
 defmodule Part2 do
   def parse(input) do
-    String.split(input, "\n", trim: true)
-    |> Enum.map(&Enum.join(Regex.scan(~r/\d+/, &1)))
-    |> Enum.map(&String.to_integer/1)
+    for line <- String.split(input, "\n", trim: true) do
+      Regex.scan(~r/\d+/, line)
+      |> Enum.join()
+      |> String.to_integer()
+    end
   end
 
   def run(input) do
