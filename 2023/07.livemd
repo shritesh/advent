@@ -119,22 +119,19 @@ expected = 5905
 ```elixir
 defmodule Part2 do
   def replace_zero(hand, replacement) do
-    for n <- hand do
-      if n == 0 do
-        replacement
-      else
-        n
-      end
-    end
+    Enum.map(hand, fn
+      0 -> replacement
+      n -> n
+    end)
   end
 
   def type(hand) do
     jokers = Enum.count(hand, &(&1 == 0))
 
-    if jokers == 0 or jokers == 5 do
+    if jokers in [0, 5] do
       Part1.type(hand)
     else
-      Enum.filter(hand, &(&1 != 0))
+      hand
       |> Enum.uniq()
       |> Enum.map(&replace_zero(hand, &1))
       |> Enum.map(&Part1.type/1)
@@ -153,13 +150,13 @@ defmodule Part2 do
   end
 end
 
-Part2.run(example)
+Part2.run(example) == expected
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-5905
+true
 ```
 
 ```elixir
