@@ -118,26 +118,6 @@ expected = 5905
 
 ```elixir
 defmodule Part2 do
-  def parse(input) do
-    for line <- String.split(input, "\n", trim: true) do
-      [hand, bid] = String.split(line, " ")
-
-      labels =
-        for c <- String.to_charlist(hand) do
-          case c do
-            ?T -> 10
-            ?Q -> 12
-            ?K -> 13
-            ?A -> 14
-            ?J -> 0
-            _ -> c - ?0
-          end
-        end
-
-      {labels, String.to_integer(bid)}
-    end
-  end
-
   def replace_zero(hand, replacement) do
     for n <- hand do
       if n == 0 do
@@ -163,7 +143,7 @@ defmodule Part2 do
   end
 
   def run(input) do
-    parse(input)
+    Part1.parse(input, 0)
     |> Enum.group_by(fn {hand, _} -> type(hand) end)
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.flat_map(fn {_type, list} -> Part1.tiebreak(list) end)
