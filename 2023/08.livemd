@@ -1,0 +1,171 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 8
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+example1 = """
+RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)
+"""
+
+example2 = """
+LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)
+"""
+
+input = Kino.Input.textarea("Input", default: example1)
+```
+
+## Part 1
+
+```elixir
+expected1 = 2
+expected2 = 6
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+6
+```
+
+```elixir
+defmodule Part1 do
+  @start "AAA"
+  @stop "ZZZ"
+
+  def parse(input) do
+    [instructions, rest] = String.split(input, "\n\n")
+
+    nodes =
+      Regex.scan(~r/(.{3}) = \((.{3}), (.{3})\)/, rest, capture: :all_but_first)
+      |> Enum.map(fn [k, l, r] -> {k, {l, r}} end)
+      |> Enum.into(%{})
+
+    {String.codepoints(instructions), nodes}
+  end
+
+  def follow(_nodes, _instructions, _inst, @stop, count), do: count
+
+  def follow(nodes, instructions, [], key, count),
+    do: follow(nodes, instructions, instructions, key, count)
+
+  def follow(nodes, instructions, ["L" | rest], key, count) do
+    {left, _} = nodes[key]
+    follow(nodes, instructions, rest, left, count + 1)
+  end
+
+  def follow(nodes, instructions, ["R" | rest], key, count) do
+    {_, right} = nodes[key]
+    follow(nodes, instructions, rest, right, count + 1)
+  end
+
+  def run(input) do
+    {instructions, nodes} = parse(input)
+    follow(nodes, instructions, [], @start, 0)
+  end
+end
+
+{Part1.run(example1) == expected1, Part1.run(example2) == expected2}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{true, true}
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> then(&Kino.Markdown.new("Part 1: #{&1}"))
+```
+
+## Part 2
+
+```elixir
+example = """
+LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)
+"""
+
+expected = 6
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+6
+```
+
+```elixir
+defmodule Part2 do
+  def follow(nodes, instructions, [], key, count),
+    do: follow(nodes, instructions, instructions, key, count)
+
+  def follow(nodes, instructions, [direction | rest], key, count) do
+    index =
+      case direction do
+        "L" -> 0
+        "R" -> 1
+      end
+
+    key = elem(nodes[key], index)
+
+    if String.ends_with?(key, "Z") do
+      count + 1
+    else
+      follow(nodes, instructions, rest, key, count + 1)
+    end
+  end
+
+  def run(input) do
+    {instructions, nodes} = Part1.parse(input)
+
+    Map.keys(nodes)
+    |> Enum.filter(&String.ends_with?(&1, "A"))
+    |> Enum.map(&follow(nodes, instructions, [], &1, 0))
+    |> Enum.reduce(fn x, y -> div(x * y, Integer.gcd(x, y)) end)
+  end
+end
+
+Part2.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> then(&Kino.Markdown.new("Part 2: #{&1}"))
+```
