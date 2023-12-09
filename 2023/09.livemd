@@ -1,0 +1,118 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 9
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+example = """
+0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45
+"""
+
+input = Kino.Input.textarea("Input", default: example)
+```
+
+## Part 1
+
+```elixir
+expected = [18, 28, 68]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[18, 28, 68]
+```
+
+```elixir
+defmodule Part1 do
+  def parse(input) do
+    for history <- String.split(input, "\n", trim: true) do
+      for n <- String.split(history) do
+        String.to_integer(n)
+      end
+    end
+  end
+
+  def sequence(history, func, acc) do
+    next =
+      history
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.map(fn [a, b] -> b - a end)
+
+    if Enum.all?(next, &(&1 == 0)) do
+      [func.(history) | acc]
+    else
+      sequence(next, func, [func.(history) | acc])
+    end
+  end
+
+  def run(input) do
+    for history <- parse(input) do
+      sequence(history, &List.last/1, [])
+      |> Enum.reduce(&(&1 + &2))
+    end
+  end
+end
+
+Part1.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> Enum.sum()
+|> then(&Kino.Markdown.new("Part 1: #{&1}"))
+```
+
+## Part 2
+
+```elixir
+expected = [-3, 0, 5]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[-3, 0, 5]
+```
+
+```elixir
+defmodule Part2 do
+  def run(input) do
+    for history <- Part1.parse(input) do
+      Part1.sequence(history, &List.first/1, [])
+      |> Enum.reduce(&(&1 - &2))
+    end
+  end
+end
+
+Part2.run(example) == expected
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part2.run()
+|> Enum.sum()
+|> then(&Kino.Markdown.new("Part 2: #{&1}"))
+```
