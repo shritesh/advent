@@ -1,0 +1,126 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Day 10 Part 1
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Input
+
+```elixir
+example1 = """
+.....
+.S-7.
+.|.|.
+.L-J.
+.....
+"""
+
+example1_complex = """
+-L|F7
+7S-7|
+L|7||
+-L-J|
+L|-JF
+"""
+
+example2 = """
+..F7.
+.FJ|.
+SJ.L7
+|F--J
+LJ...
+"""
+
+example2_complex = """
+7-F7-
+.FJ|7
+SJLL7
+|F--J
+LJ.LJ
+"""
+
+input = Kino.Input.textarea("Input", default: example1)
+```
+
+## Part 1
+
+```elixir
+expected = [4, 8]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[4, 8]
+```
+
+```elixir
+defmodule Part1 do
+  def parse(input) do
+    for {line, row} <- String.split(input, "\n", trim: true) |> Enum.with_index(), reduce: %{} do
+      acc ->
+        for {char, col} <- String.codepoints(line) |> Enum.with_index(), into: acc do
+          {{row, col}, char}
+        end
+    end
+  end
+
+  def next(tiles, {row, col} = current) do
+    coords =
+      case tiles[current] do
+        "|" -> [{row - 1, col}, {row + 1, col}]
+        "-" -> [{row, col - 1}, {row, col + 1}]
+        "L" -> [{row - 1, col}, {row, col + 1}]
+        "J" -> [{row - 1, col}, {row, col - 1}]
+        "7" -> [{row, col - 1}, {row + 1, col}]
+        "F" -> [{row, col + 1}, {row + 1, col}]
+        _ -> []
+      end
+
+    List.flatten(coords)
+    |> Enum.filter(&Map.has_key?(tiles, &1))
+  end
+
+  def loop(_tiles, [], count, _visited), do: count
+
+  def loop(tiles, current, count, visited) do
+    to_visit = Enum.flat_map(current, &next(tiles, &1)) |> Enum.filter(&(&1 not in visited))
+    loop(tiles, to_visit, count + 1, MapSet.union(visited, MapSet.new(current)))
+  end
+
+  def run(input) do
+    tiles = parse(input)
+    {start_row, start_col} = start = Enum.find_value(tiles, fn {k, v} -> v == "S" && k end)
+
+    to_visit =
+      for x <- -1..1,
+          y <- -1..1,
+          candidate = {start_row + x, start_col + y},
+          candidate != start,
+          start in next(tiles, candidate),
+          do: candidate
+
+    loop(tiles, to_visit, 0, MapSet.new())
+  end
+end
+
+[Part1.run(example1), Part1.run(example2)] == expected and
+  Part1.run(example1) == Part1.run(example1_complex) and
+  Part1.run(example2) == Part1.run(example2_complex)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+Kino.Input.read(input)
+|> Part1.run()
+|> then(&Kino.Markdown.new("Part 1: #{&1}"))
+```
