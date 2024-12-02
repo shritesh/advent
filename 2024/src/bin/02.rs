@@ -10,9 +10,9 @@ fn parse(input: &str) -> Result<Input, ParseIntError> {
         .collect()
 }
 
-fn is_safe(iter: impl Iterator<Item = u32>) -> bool {
+fn is_safe<'a>(iter: impl Iterator<Item = &'a u32>) -> bool {
     let (inc, dec, adj) = iter
-        .map_windows(|[a, b]| (a < b, a > b, (1..=3).contains(&a.abs_diff(*b))))
+        .map_windows(|[a, b]| (a < b, a > b, (1..=3).contains(&a.abs_diff(**b))))
         .fold((true, true, true), |(inc, dec, adj), (i, d, a)| {
             (inc && i, dec && d, adj && a)
         });
@@ -21,30 +21,23 @@ fn is_safe(iter: impl Iterator<Item = u32>) -> bool {
 }
 
 fn part_1(input: &Input) -> usize {
-    input
-        .iter()
-        .filter(|row| is_safe(row.iter().copied()))
-        .count()
+    input.iter().filter(|row| is_safe(row.iter())).count()
+}
+
+fn is_safe_with_tolerance(row: &[u32]) -> bool {
+    (0..row.len()).any(|i| {
+        is_safe(
+            row.iter()
+                .enumerate()
+                .filter_map(|(j, x)| (i != j).then_some(x)),
+        )
+    })
 }
 
 fn part_2(input: &Input) -> usize {
     input
         .iter()
-        .filter(|row| {
-            if is_safe(row.iter().copied()) {
-                true
-            } else {
-                (0..row.len()).any(|i| {
-                    is_safe(row.iter().copied().enumerate().filter_map(|(j, x)| {
-                        if i == j {
-                            None
-                        } else {
-                            Some(x)
-                        }
-                    }))
-                })
-            }
-        })
+        .filter(|row| is_safe(row.iter()) || is_safe_with_tolerance(&row))
         .count()
 }
 
