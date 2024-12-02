@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, num::ParseIntError};
 
 fn parse_input(input: &str) -> Result<(Vec<i64>, Vec<i64>), ParseIntError> {
     input
-        .split_ascii_whitespace()
+        .split_whitespace()
         .map(str::parse::<i64>)
         .array_chunks()
         .map(|[l, r]| Ok((l?, r?)))
@@ -11,7 +11,13 @@ fn parse_input(input: &str) -> Result<(Vec<i64>, Vec<i64>), ParseIntError> {
 }
 
 fn part_1(left: &[i64], right: &[i64]) -> u64 {
-    left.iter().zip(right).map(|(l, r)| l.abs_diff(*r)).sum()
+    let mut left = left.to_vec();
+    let mut right = right.to_vec();
+
+    left.sort();
+    right.sort();
+
+    left.iter().zip(right).map(|(l, r)| l.abs_diff(r)).sum()
 }
 
 fn part_2(left: &[i64], right: &[i64]) -> i64 {
@@ -26,10 +32,27 @@ fn part_2(left: &[i64], right: &[i64]) -> i64 {
 }
 
 fn main() -> Result<(), ParseIntError> {
-    let (left, right) = parse_input(include_str!("../inputs/01.txt"))?;
+    let (left, right) = parse_input(include_str!("../../inputs/01.txt"))?;
 
     dbg!(part_1(&left, &right));
     dbg!(part_2(&left, &right));
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use std::num::ParseIntError;
+
+    use crate::*;
+
+    #[test]
+    fn test_day_1() -> Result<(), ParseIntError> {
+        let (left, right) = parse_input(include_str!("../../inputs/01.example.txt"))?;
+
+        assert_eq!(11, part_1(&left, &right));
+        assert_eq!(31, part_2(&left, &right));
+
+        Ok(())
+    }
 }
