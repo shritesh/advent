@@ -32,11 +32,10 @@ fn run<const N: usize>(input: &Input, operators: impl Fn(usize, usize) -> [usize
                 .iter()
                 .skip(1)
                 .fold(vec![numbers[0]], |acc, n| {
-                    acc.iter().flat_map(|x| operators(*x, *n)).collect()
+                    acc.into_iter().flat_map(|x| operators(x, *n)).collect()
                 })
-                .iter()
-                .any(|x| x == expected)
-                .then_some(expected)
+                .into_iter()
+                .find(|x| x == expected)
         })
         .sum()
 }
